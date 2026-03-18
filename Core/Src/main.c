@@ -24,6 +24,7 @@
 /* USER CODE BEGIN Includes */
 #include "adc.h"
 #include "can.h"
+#include <string.h>
 #include <stdbool.h>
 /* USER CODE END Includes */
 
@@ -70,9 +71,9 @@ extern uint16_t filteredAdcBuffer[numberOfThermistors];
 extern uint8_t FDCAN1TxData[8];
 extern FDCAN_TxHeaderTypeDef FDCAN1TxHeader;
 
-
 int thermistorFault = 0;
 thermStatus readStatus = 0;
+int error = 0;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -539,7 +540,7 @@ void xReadTempFunction(void *argument)
   /* Infinite loop */
   for(;;)
   {
-//	  ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
+	  ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
 
 	  if(!filtersInitialized)
 	  {
