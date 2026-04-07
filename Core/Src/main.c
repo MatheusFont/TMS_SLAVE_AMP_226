@@ -73,6 +73,7 @@ extern FDCAN_TxHeaderTypeDef FDCAN1TxHeader;
 
 int thermistorFault = 0;
 thermStatus readStatus = 0;
+uint16_t medianADC = 0;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -85,7 +86,7 @@ void xReadTempFunction(void *argument);
 void xSendCANFunction(void *argument);
 
 /* USER CODE BEGIN PFP */
-void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc);
+//void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -126,6 +127,9 @@ int main(void)
   MX_FDCAN1_Init();
   MX_ADC2_Init();
   /* USER CODE BEGIN 2 */
+  HAL_ADCEx_Calibration_Start(&hadc2, ADC_SINGLE_ENDED);
+
+  HAL_ADC_Start_DMA(&hadc2, (uint32_t*)rawAdcBuffer, numberOfThermistors);
   /* USER CODE END 2 */
 
   /* Init scheduler */
@@ -199,8 +203,8 @@ void SystemClock_Config(void)
   RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSI;
-  RCC_OscInitStruct.PLL.PLLM = RCC_PLLM_DIV4;
-  RCC_OscInitStruct.PLL.PLLN = 85;
+  RCC_OscInitStruct.PLL.PLLM = RCC_PLLM_DIV1;
+  RCC_OscInitStruct.PLL.PLLN = 20;
   RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
   RCC_OscInitStruct.PLL.PLLQ = RCC_PLLQ_DIV2;
   RCC_OscInitStruct.PLL.PLLR = RCC_PLLR_DIV2;
@@ -245,20 +249,20 @@ static void MX_ADC2_Init(void)
   /** Common config
   */
   hadc2.Instance = ADC2;
-  hadc2.Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV4;
+  hadc2.Init.ClockPrescaler = ADC_CLOCK_ASYNC_DIV4;
   hadc2.Init.Resolution = ADC_RESOLUTION_12B;
   hadc2.Init.DataAlign = ADC_DATAALIGN_RIGHT;
   hadc2.Init.GainCompensation = 0;
-  hadc2.Init.ScanConvMode = ADC_SCAN_ENABLE;
+  hadc2.Init.ScanConvMode = ADC_SCAN_DISABLE;
   hadc2.Init.EOCSelection = ADC_EOC_SINGLE_CONV;
   hadc2.Init.LowPowerAutoWait = DISABLE;
   hadc2.Init.ContinuousConvMode = ENABLE;
-  hadc2.Init.NbrOfConversion = 16;
+  hadc2.Init.NbrOfConversion = 1;
   hadc2.Init.DiscontinuousConvMode = DISABLE;
   hadc2.Init.ExternalTrigConv = ADC_SOFTWARE_START;
   hadc2.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_NONE;
-  hadc2.Init.DMAContinuousRequests = DISABLE;
-  hadc2.Init.Overrun = ADC_OVR_DATA_PRESERVED;
+  hadc2.Init.DMAContinuousRequests = ENABLE;
+  hadc2.Init.Overrun = ADC_OVR_DATA_OVERWRITTEN;
   hadc2.Init.OversamplingMode = DISABLE;
   if (HAL_ADC_Init(&hadc2) != HAL_OK)
   {
@@ -269,7 +273,7 @@ static void MX_ADC2_Init(void)
   */
   sConfig.Channel = ADC_CHANNEL_1;
   sConfig.Rank = ADC_REGULAR_RANK_1;
-  sConfig.SamplingTime = ADC_SAMPLETIME_640CYCLES_5;
+  sConfig.SamplingTime = ADC_SAMPLETIME_92CYCLES_5;
   sConfig.SingleDiff = ADC_SINGLE_ENDED;
   sConfig.OffsetNumber = ADC_OFFSET_NONE;
   sConfig.Offset = 0;
@@ -277,143 +281,8 @@ static void MX_ADC2_Init(void)
   {
     Error_Handler();
   }
-
-  /** Configure Regular Channel
-  */
-  sConfig.Channel = ADC_CHANNEL_2;
-  sConfig.Rank = ADC_REGULAR_RANK_2;
-  if (HAL_ADC_ConfigChannel(&hadc2, &sConfig) != HAL_OK)
-  {
-    Error_Handler();
-  }
-
-  /** Configure Regular Channel
-  */
-  sConfig.Channel = ADC_CHANNEL_3;
-  sConfig.Rank = ADC_REGULAR_RANK_3;
-  if (HAL_ADC_ConfigChannel(&hadc2, &sConfig) != HAL_OK)
-  {
-    Error_Handler();
-  }
-
-  /** Configure Regular Channel
-  */
-  sConfig.Channel = ADC_CHANNEL_4;
-  sConfig.Rank = ADC_REGULAR_RANK_4;
-  if (HAL_ADC_ConfigChannel(&hadc2, &sConfig) != HAL_OK)
-  {
-    Error_Handler();
-  }
-
-  /** Configure Regular Channel
-  */
-  sConfig.Channel = ADC_CHANNEL_5;
-  sConfig.Rank = ADC_REGULAR_RANK_5;
-  if (HAL_ADC_ConfigChannel(&hadc2, &sConfig) != HAL_OK)
-  {
-    Error_Handler();
-  }
-
-  /** Configure Regular Channel
-  */
-  sConfig.Channel = ADC_CHANNEL_6;
-  sConfig.Rank = ADC_REGULAR_RANK_6;
-  if (HAL_ADC_ConfigChannel(&hadc2, &sConfig) != HAL_OK)
-  {
-    Error_Handler();
-  }
-
-  /** Configure Regular Channel
-  */
-  sConfig.Channel = ADC_CHANNEL_7;
-  sConfig.Rank = ADC_REGULAR_RANK_7;
-  if (HAL_ADC_ConfigChannel(&hadc2, &sConfig) != HAL_OK)
-  {
-    Error_Handler();
-  }
-
-  /** Configure Regular Channel
-  */
-  sConfig.Channel = ADC_CHANNEL_8;
-  sConfig.Rank = ADC_REGULAR_RANK_8;
-  if (HAL_ADC_ConfigChannel(&hadc2, &sConfig) != HAL_OK)
-  {
-    Error_Handler();
-  }
-
-  /** Configure Regular Channel
-  */
-  sConfig.Channel = ADC_CHANNEL_9;
-  sConfig.Rank = ADC_REGULAR_RANK_9;
-  if (HAL_ADC_ConfigChannel(&hadc2, &sConfig) != HAL_OK)
-  {
-    Error_Handler();
-  }
-
-  /** Configure Regular Channel
-  */
-  sConfig.Channel = ADC_CHANNEL_10;
-  sConfig.Rank = ADC_REGULAR_RANK_10;
-  if (HAL_ADC_ConfigChannel(&hadc2, &sConfig) != HAL_OK)
-  {
-    Error_Handler();
-  }
-
-  /** Configure Regular Channel
-  */
-  sConfig.Channel = ADC_CHANNEL_11;
-  sConfig.Rank = ADC_REGULAR_RANK_11;
-  if (HAL_ADC_ConfigChannel(&hadc2, &sConfig) != HAL_OK)
-  {
-    Error_Handler();
-  }
-
-  /** Configure Regular Channel
-  */
-  sConfig.Channel = ADC_CHANNEL_12;
-  sConfig.Rank = ADC_REGULAR_RANK_12;
-  if (HAL_ADC_ConfigChannel(&hadc2, &sConfig) != HAL_OK)
-  {
-    Error_Handler();
-  }
-
-  /** Configure Regular Channel
-  */
-  sConfig.Channel = ADC_CHANNEL_13;
-  sConfig.Rank = ADC_REGULAR_RANK_13;
-  if (HAL_ADC_ConfigChannel(&hadc2, &sConfig) != HAL_OK)
-  {
-    Error_Handler();
-  }
-
-  /** Configure Regular Channel
-  */
-  sConfig.Channel = ADC_CHANNEL_14;
-  sConfig.Rank = ADC_REGULAR_RANK_14;
-  if (HAL_ADC_ConfigChannel(&hadc2, &sConfig) != HAL_OK)
-  {
-    Error_Handler();
-  }
-
-  /** Configure Regular Channel
-  */
-  sConfig.Channel = ADC_CHANNEL_15;
-  sConfig.Rank = ADC_REGULAR_RANK_15;
-  if (HAL_ADC_ConfigChannel(&hadc2, &sConfig) != HAL_OK)
-  {
-    Error_Handler();
-  }
-
-  /** Configure Regular Channel
-  */
-  sConfig.Channel = ADC_CHANNEL_17;
-  sConfig.Rank = ADC_REGULAR_RANK_16;
-  if (HAL_ADC_ConfigChannel(&hadc2, &sConfig) != HAL_OK)
-  {
-    Error_Handler();
-  }
   /* USER CODE BEGIN ADC2_Init 2 */
-  HAL_ADC_Start_DMA(&hadc2, (uint32_t*) rawAdcBuffer, numberOfThermistors);
+
   /* USER CODE END ADC2_Init 2 */
 
 }
@@ -496,10 +365,8 @@ static void MX_GPIO_Init(void)
   /* USER CODE END MX_GPIO_Init_1 */
 
   /* GPIO Ports Clock Enable */
-  __HAL_RCC_GPIOF_CLK_ENABLE();
-  __HAL_RCC_GPIOC_CLK_ENABLE();
   __HAL_RCC_GPIOA_CLK_ENABLE();
-  __HAL_RCC_GPIOB_CLK_ENABLE();
+  __HAL_RCC_GPIOC_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(userLED_GPIO_Port, userLED_Pin, GPIO_PIN_RESET);
@@ -517,11 +384,11 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
-void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc){
-	BaseType_t xHigherPriorityTaskWoken = pdFALSE;
-	vTaskNotifyGiveFromISR(xReadTempHandle, &xHigherPriorityTaskWoken);
-	portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
-}
+//void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc){
+//	BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+//	vTaskNotifyGiveFromISR(xReadTempHandle, &xHigherPriorityTaskWoken);
+//	portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+//}
 /* USER CODE END 4 */
 
 /* USER CODE BEGIN Header_xReadTempFunction */
@@ -534,33 +401,34 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc){
 void xReadTempFunction(void *argument)
 {
   /* USER CODE BEGIN 5 */
-	static bool filtersInitialized = false;
-	// xReadTempHandle = xTaskGetCurrentTaskHandle();
+//	static bool filtersInitialized = false;
+	 xReadTempHandle = xTaskGetCurrentTaskHandle();
   /* Infinite loop */
   for(;;)
   {
 //	  ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
-
-	  if(!filtersInitialized)
-	  {
-		  initTemperatureFilters(rawAdcBuffer);
-		  filtersInitialized = true;
-	  }
+//
+//	  if(!filtersInitialized)
+//	  {
+//		  initTemperatureFilters(rawAdcBuffer);
+//		  filtersInitialized = true;
+//	  }
 
 	  for(int i = 0; i < numberOfThermistors; i++){
 
-		  uint16_t medianADC = applyMedianFilter(rawAdcBuffer[i], i);
+		  medianADC = applyMedianFilter(rawAdcBuffer[i], i);
 		  filteredAdcBuffer[i] = applyIIRFilter(medianADC, i);
-		  readStatus = checkThermistorConnection(filteredAdcBuffer[i]);
+//		  readStatus = checkThermistorConnection(filteredAdcBuffer[i]);
 
-		  if(readStatus == OK){
+//		  if(readStatus == OK){
 			  tempBuffer[i] = convertVoltageToTemperature(convertBitsToVoltage(filteredAdcBuffer[i]));
-		  }
-		  else{
-			  thermistorFault = 1;
-			  sendReadingErrorInfoIntoCAN();
-			  Error_Handler();
-		  }
+
+//		  }
+//		  else{
+//			  thermistorFault = 1;
+//			  sendReadingErrorInfoIntoCAN();
+//			  Error_Handler();
+//		  }
 	  }
 	  osDelay(1);
   }
@@ -581,7 +449,7 @@ void xSendCANFunction(void *argument)
   for(;;)
   {
 #ifdef slave1
-	  sendTemperatureToMaster(tempBuffer, idSlave1Burst0);
+//	  sendTemperatureToMaster(tempBuffer, idSlave1Burst0);
 #endif
 #ifdef slave2
 	  sendTemperatureToMaster(tempBuffer, idSlave2Burst0);
@@ -600,13 +468,35 @@ void xSendCANFunction(void *argument)
 }
 
 /**
+  * @brief  Period elapsed callback in non blocking mode
+  * @note   This function is called  when TIM20 interrupt took place, inside
+  * HAL_TIM_IRQHandler(). It makes a direct call to HAL_IncTick() to increment
+  * a global variable "uwTick" used as application time base.
+  * @param  htim : TIM handle
+  * @retval None
+  */
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
+{
+  /* USER CODE BEGIN Callback 0 */
+
+  /* USER CODE END Callback 0 */
+  if (htim->Instance == TIM20)
+  {
+    HAL_IncTick();
+  }
+  /* USER CODE BEGIN Callback 1 */
+
+  /* USER CODE END Callback 1 */
+}
+
+/**
   * @brief  This function is executed in case of error occurrence.
   * @retval None
   */
 void Error_Handler(void)
 {
   /* USER CODE BEGIN Error_Handler_Debug */
-	HAL_GPIO_WritePin(GPIOC, GPIO_PIN_8, SET);
+	HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, SET);
   /* User can add his own implementation to report the HAL error return state */
   __disable_irq();
   while (1)

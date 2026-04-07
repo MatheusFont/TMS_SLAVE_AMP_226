@@ -11,7 +11,7 @@
 #include "main.h"
 #include "cmsis_os.h"
 
-#define numberOfThermistors 16
+#define numberOfThermistors 1
 #define adcResolution 4095
 #define vcc 2.9
 #define shortCircuitThreshold 100
